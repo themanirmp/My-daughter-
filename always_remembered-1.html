@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Always remembered</title>
+<style>
+  :root { color-scheme: dark; --bg: #1b0f1f; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { display: grid; place-items: center; }
+  canvas { display: block; }
+
+  .link-btn {
+    position: fixed;
+    left: 50%;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    padding: 11px 24px;
+    border-radius: 999px;
+    border: 1px solid #ff8fa3;
+    background: rgba(255, 77, 109, 0.14);
+    color: #ffd6e0;
+    font: italic 17px Georgia, "Times New Roman", serif;
+    text-decoration: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 1.6s ease, background-color 0.2s ease;
+  }
+  .link-btn.show { opacity: 1; visibility: visible; }
+  .link-btn:hover { background: rgba(255, 77, 109, 0.3); }
+  .link-btn:focus-visible { outline: 2px solid #ffd6e0; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .link-btn { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="c" role="img" aria-label="Happy birthday my daughter. A heart made of the words 'my daughter' in many languages."></canvas>
+<a id="link" class="link-btn" href="https://t.me/+N8ngJIohmRkyN2Nk" target="_blank" rel="noopener noreferrer">Open in Telegram</a>
+
+<script>
+/* ---------------------------------------------------------------------------
+   "my daughter" in many languages. Add more lines to extend the heart.
+--------------------------------------------------------------------------- */
+const TRANSLATIONS = {
+  "English": "my daughter",
+  "Spanish": "mi hija",
+  "French": "ma fille",
+  "German": "meine Tochter",
+  "Italian": "mia figlia",
+  "Portuguese": "minha filha",
+  "Dutch": "mijn dochter",
+  "Swedish": "min dotter",
+  "Norwegian": "min datter",
+  "Finnish": "tyttäreni",
+  "Icelandic": "dóttir mín",
+  "Polish": "moja córka",
+  "Czech": "moje dcera",
+  "Slovak": "moja dcéra",
+  "Slovenian": "moja hči",
+  "Croatian": "moja kći",
+  "Bosnian": "moja kćerka",
+  "Serbian": "моја ћерка",
+  "Russian": "моя дочь",
+  "Ukrainian": "моя дочка",
+  "Belarusian": "мая дачка",
+  "Bulgarian": "моята дъщеря",
+  "Macedonian": "моја ќерка",
+  "Greek": "κόρη μου",
+  "Romanian": "fiica mea",
+  "Hungarian": "a lányom",
+  "Turkish": "kızım",
+  "Azerbaijani": "qızım",
+  "Persian": "دخترم",
+  "Arabic": "ابنتي",
+  "Hebrew": "הבת שלי",
+  "Urdu": "میری بیٹی",
+  "Pashto": "زما لور",
+  "Kurdish": "keça min",
+  "Tajik": "духтарам",
+  "Hindi": "मेरी बेटी",
+  "Bengali": "আমার মেয়ে",
+  "Punjabi": "ਮੇਰੀ ਧੀ",
+  "Gujarati": "મારી દીકરી",
+  "Marathi": "माझी मुलगी",
+  "Nepali": "मेरी छोरी",
+  "Tamil": "என் மகள்",
+  "Telugu": "నా కూతురు",
+  "Kannada": "ನನ್ನ ಮಗಳು",
+  "Malayalam": "എന്റെ മകൾ",
+  "Sinhala": "මගේ දුව",
+  "Thai": "ลูกสาวของฉัน",
+  "Lao": "ລູກສາວຂອງຂ້ອຍ",
+  "Khmer": "កូនស្រីរបស់ខ្ញុំ",
+  "Burmese": "ငါ့သမီး",
+  "Vietnamese": "con gái của tôi",
+  "Indonesian": "putriku",
+  "Malay": "anak perempuan saya",
+  "Filipino": "aking anak na babae",
+  "Cebuano": "akong anak nga babaye",
+  "Javanese": "anakku wadon",
+  "Chinese": "我的女儿",
+  "Japanese": "私の娘",
+  "Korean": "내 딸",
+  "Mongolian": "миний охин",
+  "Kazakh": "менің қызым",
+  "Uzbek": "qizim",
+  "Georgian": "ჩემი ქალიშვილი",
+  "Armenian": "իմ դուստրը",
+  "Albanian": "vajza ime",
+  "Basque": "nire alaba",
+  "Catalan": "la meva filla",
+  "Galician": "a miña filla",
+  "Irish": "m'iníon",
+  "Welsh": "fy merch",
+  "Scottish Gaelic": "an nighean agam",
+  "Breton": "ma merc'h",
+  "Maltese": "binti",
+  "Latvian": "mana meita",
+  "Lithuanian": "mano dukra",
+  "Estonian": "mu tütar",
+  "Luxembourgish": "meng Duechter",
+  "Frisian": "myn dochter",
+  "Yiddish": "מיין טאכטער",
+  "Latin": "filia mea",
+  "Esperanto": "mia filino",
+  "Afrikaans": "my dogter",
+  "Swahili": "binti yangu",
+  "Zulu": "indodakazi yami",
+  "Xhosa": "intombi yam",
+  "Yoruba": "ọmọbinrin mi",
+  "Hausa": "'yata",
+  "Amharic": "ሴት ልጄ",
+  "Somali": "gabadhayda",
+  "Malagasy": "zanako vavy",
+  "Haitian Creole": "pitit fi mwen",
+  "Hawaiian": "kaʻu kaikamahine",
+  "Maori": "taku tamāhine",
+  "Samoan": "loʻu afafine",
+  "Quechua": "ususiy"
+};
+
+const TITLE_TEXT = "Happy birthday my";
+const BG = "#1b0f1f";
+const PALETTE = ["#ff4d6d", "#ff758f", "#ff8fa3", "#ffb3c1", "#f72585", "#ff9e00", "#ffd6e0"];
+const TITLE_COLOR = "#ffd6e0";
+
+/* --- animation settings (change these to taste) ------------------------- */
+const TITLE_FADE = 2.5;     // seconds for the greeting to fade in
+const FIRST_WORD_AT = 2.0;  // seconds before the first heart word appears
+const WORD_DELAY = 0.09;    // seconds between one word starting and the next
+const WORD_FADE = 1.6;      // seconds each word takes to fade in
+const WORD_RISE = 16;       // pixels each word floats up while appearing
+const BEAT_EVERY = 1.6;     // seconds between heartbeats once the heart is full
+const BEAT_SIZE = 0.035;    // how much the heart grows on each beat
+const BUTTON_AT = 30;       // seconds before the Telegram button appears
+
+/* Layout is designed on a 900 x 900 canvas and scaled to fit the window. */
+const DESIGN = 900;
+const FONT_STACK = 'system-ui, "Segoe UI", "Noto Sans", sans-serif';
+const TITLE_STACK = 'Georgia, "Times New Roman", serif';
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* small seeded random generator so the heart looks the same every time */
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rand) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* classic heart curve: (x^2 + y^2 - 1)^3 - x^2 * y^3 <= 0 */
+function insideHeart(x, y) {
+  return Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y <= 0;
+}
+
+let side, u, L, placements, starts, finishedAt, t0;
+
+function layout() {
+  const dpr = window.devicePixelRatio || 1;
+  side = Math.floor(Math.min(window.innerWidth, window.innerHeight));
+  canvas.style.width = canvas.style.height = side + "px";
+  canvas.width = canvas.height = Math.floor(side * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  u = side / DESIGN;
+  const fontSize = Math.max(8, 11 * u);
+  L = {
+    scale: 310 * u,
+    cx: side / 2,
+    cy: 470 * u,
+    fontSize,
+    rowHeight: fontSize + Math.max(4, 9 * u),
+    gap: Math.max(6, 12 * u),
+    pad: Math.max(3, 6 * u),
+    rise: WORD_RISE * u,
+    titleSize: Math.max(20, 30 * u),
+    titleY: 60 * u,
+  };
+  ctx.font = L.fontSize + "px " + FONT_STACK;
+
+  const words = shuffle(Object.values(TRANSLATIONS), rng(7));
+  const colorRand = rng(11);
+  placements = [];
+
+  const segments = (sy) => {
+    const y1 = (L.cy - sy) / L.scale;
+    const y2 = (L.cy - (sy + L.rowHeight)) / L.scale;
+    const out = [];
+    let start = null, prev = 0;
+    const steps = 900;
+    for (let i = 0; i <= steps; i++) {
+      const x = -1.5 + 3.0 * i / steps;
+      const solid = insideHeart(x, y1) && insideHeart(x, y2);
+      const px = L.cx + x * L.scale;
+      if (solid && start === null) start = px;
+      else if (!solid && start !== null) { out.push([start, prev]); start = null; }
+      prev = px;
+    }
+    if (start !== null) out.push([start, prev]);
+    return out;
+  };
+
+  let idx = 0;
+  const top = L.cy - Math.floor(1.25 * L.scale);
+  const bottom = L.cy + Math.floor(1.05 * L.scale);
+  for (let y = top; y < bottom; y += L.rowHeight) {
+    for (let [left, right] of segments(y)) {
+      left += L.pad; right -= L.pad;
+      if (right <= left) continue;
+      const row = [];
+      let used = 0;
+      for (;;) {
+        const word = words[idx % words.length];
+        const w = ctx.measureText(word).width;
+        const extra = row.length ? w + L.gap : w;
+        if (used + extra > right - left) break;
+        row.push([word, w]);
+        used += extra;
+        idx++;
+      }
+      if (row.length) {
+        const pad = ((right - left) - used) / (row.length + 1);
+        let x = left + pad;
+        for (const [word, w] of row) {
+          placements.push({ x, y, text: word, color: PALETTE[Math.floor(colorRand() * PALETTE.length)] });
+          x += w + L.gap + pad;
+        }
+      }
+    }
+  }
+
+  /* words twinkle in from all over the heart */
+  const order = shuffle([...placements.keys()], rng(23));
+  starts = new Array(placements.length);
+  order.forEach((i, rank) => { starts[i] = FIRST_WORD_AT + rank * WORD_DELAY; });
+  finishedAt = FIRST_WORD_AT + placements.length * WORD_DELAY + WORD_FADE;
+}
+
+/* double-beat "lub-dub" pulse, repeating every BEAT_EVERY seconds */
+function heartbeatScale(t) {
+  t = t % BEAT_EVERY;
+  const beat = Math.exp(-Math.pow((t - 0.15) / 0.07, 2)) + 0.6 * Math.exp(-Math.pow((t - 0.42) / 0.09, 2));
+  return 1 + BEAT_SIZE * beat;
+}
+
+function draw(now) {
+  const t = reduceMotion ? finishedAt + 1 : (now - t0) / 1000;
+
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, side, side);
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left";
+
+  /* greeting fades in first */
+  const tp = Math.min(1, t / TITLE_FADE);
+  ctx.globalAlpha = 1 - Math.pow(1 - tp, 2);
+  ctx.fillStyle = TITLE_COLOR;
+  ctx.font = "italic " + L.titleSize + "px " + TITLE_STACK;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(TITLE_TEXT, L.cx, L.titleY);
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = L.fontSize + "px " + FONT_STACK;
+
+  if (t < finishedAt) {
+    for (let n = 0; n < placements.length; n++) {
+      const p = Math.min(1, (t - starts[n]) / WORD_FADE);
+      if (p < 0) continue;
+      const e = 1 - Math.pow(1 - p, 3); // ease-out
+      const w = placements[n];
+      ctx.globalAlpha = e;
+      ctx.fillStyle = w.color;
+      ctx.fillText(w.text, w.x, w.y + (1 - e) * L.rise);
+    }
+  } else {
+    /* everything is visible: the heart beats gently */
+    const s = reduceMotion ? 1 : heartbeatScale(t - finishedAt);
+    ctx.globalAlpha = 1;
+    for (const w of placements) {
+      ctx.fillStyle = w.color;
+      ctx.fillText(w.text, L.cx + (w.x - L.cx) * s, L.cy + (w.y - L.cy) * s);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function frame(now) {
+  draw(now);
+  if (!reduceMotion) requestAnimationFrame(frame);
+}
+
+function start() {
+  setTimeout(() => document.getElementById("link").classList.add("show"), BUTTON_AT * 1000);
+  layout();
+  t0 = performance.now();
+  requestAnimationFrame(frame);
+}
+
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    layout();                      // keeps the animation clock running
+    if (reduceMotion) draw(0);
+  }, 120);
+});
+
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(start);
+</script>
+</body>
+</html>
